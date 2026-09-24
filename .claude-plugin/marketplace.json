@@ -1,0 +1,17 @@
+{
+  "name": "mcp_jeedom_skills",
+  "owner": {
+    "name": "limad"
+  },
+  "metadata": {
+    "description": "Agent skill for using a Jeedom smart home through the mcp_jeedom MCP server well: token-efficient queries and correct scenario/trigger_tags syntax.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "mcp_jeedom_skills",
+      "description": "Token-efficient state/device queries and correct scenario trigger_tags syntax for mcp_jeedom",
+      "source": "./"
+    }
+  ]
+}
