@@ -25,8 +25,7 @@ Comme plugin Claude Code (ajout marketplace), ou en clonant ce repo et en pointa
 
 ## Périmètre
 
-Ce skill porte sur *l'usage* d'un serveur mcp_jeedom — pas sur le développement de plugins
-Jeedom. Il complète ce que le serveur `mcp_jeedom` impose déjà au niveau protocole (intégrité
+Ce skill porte sur *l'usage* d'un serveur `mcp_jeedom` . Il complète ce que le serveur impose déjà au niveau protocole (intégrité
 des réponses, masquage des IDs internes à l'utilisateur, confirmation avant action sensible)
 avec ce qui ne tient pas dans ce champ d'instructions toujours chargé.
 
