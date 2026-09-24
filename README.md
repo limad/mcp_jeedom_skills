@@ -1,33 +1,35 @@
 # mcp_jeedom_skills
 
-Agent skill for using a [Jeedom](https://www.jeedom.com/) smart home well through the
-[mcp_jeedom](https://github.com/limad/jeedom_mcp) MCP server — for Claude Code, Codex, and any
-other agent that reads `AGENTS.md`/Claude Skills.
+Skill agent pour bien piloter une maison [Jeedom](https://www.jeedom.com/) via le serveur MCP
+[mcp_jeedom](https://github.com/limad/jeedom_mcp) — pour Claude Code, Codex, et tout autre
+agent qui lit `AGENTS.md`/les Claude Skills.
 
-## What it covers
+## Ce que ça couvre
 
-- **Token-efficient queries** — targeted lookups vs full-house dumps, ETag reuse for repeated
-  polling, `summary`/`compact` formats, bulk read/execute instead of looping single calls,
-  avoiding the ~16K-token full ID map unless truly needed.
-- **Scenario authoring** — Jeedom's `trigger_tags` syntax (`#trigger_name#`, `#trigger_id#`,
-  `#trigger_value#`, `#trigger#`), the quoting pitfall that breaks conditions silently, and why
-  not to fall back to the pre-4.5 `#cmdId#` syntax that general Jeedom knowledge often suggests.
-- **The `merged`/`legacy` tool-naming split** — `mcp_jeedom` can expose either grouped
-  action-based tools (`state(action=find)`) or one tool per action (`find_command`), depending
-  on how the server is configured; the skill gives both names so it stays correct either way.
+- **Requêtes économes en tokens** — recherche ciblée plutôt que dump complet de la maison,
+  réutilisation de l'`etag` pour les lectures répétées, formats `summary`/`compact`,
+  lecture/exécution en masse plutôt que des appels un par un, éviter la carte complète des IDs
+  (~16K tokens) sauf besoin réel.
+- **Rédaction de scénarios** — syntaxe `trigger_tags` de Jeedom (`#trigger_name#`, `#trigger_id#`,
+  `#trigger_value#`, `#trigger#`), le piège de guillemets qui casse une condition silencieusement,
+  et pourquoi éviter l'ancienne syntaxe `#cmdId#` (pré-4.5) que la connaissance générale d'un
+  modèle sur Jeedom suggère souvent.
+- **La distinction `merged`/`legacy`** — `mcp_jeedom` peut exposer soit des outils groupés par
+  action (`state(action=find)`), soit un outil par action (`find_command`), selon la
+  configuration du serveur ; le skill donne les deux noms pour rester correct dans les deux cas.
 
-## Install
+## Installation
 
-As a Claude Code plugin (marketplace add), or by cloning this repo and pointing your agent at
-`skills/jeedom-mcp-best-practices/SKILL.md` / `AGENTS.md` directly.
+Comme plugin Claude Code (ajout marketplace), ou en clonant ce repo et en pointant l'agent vers
+`skills/jeedom-mcp-best-practices/SKILL.md` / `AGENTS.md` directement.
 
-## Scope
+## Périmètre
 
-This skill is about *using* an mcp_jeedom server well — not about developing Jeedom plugins.
-It complements the behavior the `mcp_jeedom` server already enforces at the protocol level
-(response integrity, hiding internal IDs from the user, confirmation before sensitive actions)
-with what doesn't fit in that always-loaded instructions field.
+Ce skill porte sur *l'usage* d'un serveur mcp_jeedom — pas sur le développement de plugins
+Jeedom. Il complète ce que le serveur `mcp_jeedom` impose déjà au niveau protocole (intégrité
+des réponses, masquage des IDs internes à l'utilisateur, confirmation avant action sensible)
+avec ce qui ne tient pas dans ce champ d'instructions toujours chargé.
 
-## License
+## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT — voir [LICENSE](LICENSE).
