@@ -17,6 +17,13 @@ IDs internes à l'utilisateur, confirmation avant action sensible). Ce guide cou
 tient pas : le choix d'options pour économiser des tokens, et les pièges de syntaxe des
 scénarios.
 
+Suppose un serveur `mcp_jeedom` déjà configuré et accessible. Les outils réellement
+disponibles dépendent de son `tools_mode` (merged/legacy) **et** du rôle attaché au token
+utilisé (admin/operator/readonly/guest) ainsi que des permissions activées côté serveur
+(`allow_scenario_write`, `read_only`, etc.) : l'absence d'un outil attendu signale souvent une
+restriction de rôle/permission, pas un nom incorrect — se fier à la liste d'outils réellement
+reçue.
+
 ## Deux jeux de noms d'outils
 
 Le serveur peut être configuré en `tools_mode=merged` (actions groupées dans peu d'outils,
@@ -41,17 +48,44 @@ active ; ne pas halluciner un outil qui n'y figure pas.
 Chaque option ci-dessous existe côté serveur mais n'est appliquée QUE si l'appelant la demande —
 ne pas se rabattre par défaut sur la lecture la plus lourde.
 
+Les volumes entre parenthèses (summary/json/full_map) sont des ordres de grandeur mesurés sur
+une installation donnée — ils varient avec le nombre d'équipements/commandes de la maison
+cible. Ce qui est garanti, c'est l'écart relatif (`summary` ≪ `json` complet ≪ `full_map`), pas
+la valeur absolue : ne pas les citer à l'utilisateur comme un chiffre fixe.
+
 | Besoin | Utiliser | Éviter |
 |---|---|---|
 | État d'un équipement précis | recherche ciblée (`state find` / `find_command`) avec `generic_type`/`jeeobject_name` | état complet puis filtrage côté agent |
-| Vue d'ensemble narrative de la maison | `format=summary` (~3K tokens) | `format=json` par défaut (~25K tokens) |
+| Vue d'ensemble narrative de la maison | `format=summary` (de l'ordre du K-token) | `format=json` par défaut (plusieurs fois plus lourd) |
 | Longue liste d'équipements/commandes | `format=compact` (tabulaire, dense) + pagination `limit`/`offset` + `only_active=true` | tout charger en JSON complet sans filtre |
-| Reposer la même requête (poll répété) | renvoyer l'`etag` reçu précédemment → réponse `[UNCHANGED etag=...]` si rien n'a changé | rappeler sans `etag`, qui repaie le payload complet à chaque fois |
+| Reposer la même requête (poll répété) | voir « Portée de l'ETag » ci-dessous — ne s'applique pas à tous les outils | renvoyer un `etag` à un outil qui n'en a jamais fourni (aucun effet) |
 | Savoir ce qui a changé récemment | action `changes` / `get_changes` (fenêtre en minutes) | re-tirer l'état complet pour comparer soi-même |
 | Lire/agir sur plusieurs commandes déjà identifiées | lecture/exécution `bulk` | boucler un appel par commande |
-| Cartographie exhaustive de tous les IDs | seulement si vraiment nécessaire — la resource dédiée pèse à elle seule ~16K tokens | la lire "par précaution" en début de conversation |
+| Cartographie exhaustive de tous les IDs | seulement si vraiment nécessaire — la resource dédiée est nettement plus lourde qu'une recherche ciblée | la lire "par précaution" en début de conversation |
 | Vérifier qu'une action a bien été appliquée | relire l'état après ~2s | ré-exécuter l'action "pour vérifier" (ne prouve rien, coûte un aller-retour de plus) |
 | Contexte maison (habitants, generic_types...) | lire les resources dédiées une fois en début de session | les relire à chaque tour |
+
+## Portée de l'ETag
+
+L'ETag n'existe que sur une partie des outils de lecture — ne pas en renvoyer un à un outil qui
+n'en a jamais fourni dans sa réponse (ça n'a aucun effet, et laisse croire à une économie de
+tokens qui n'a pas lieu).
+
+Le renvoyer est pertinent pour (réponse `[UNCHANGED etag=...]` si rien n'a changé depuis) :
+
+| Merged | Legacy |
+|---|---|
+| `state(action=full)` | `get_full_state` |
+| `devices(action=list)` | `list_devices` |
+| `state(action=object)` | `get_jeeobject_state` |
+| `scenarios(action=list)` | `list_scenarios` |
+| `plugins(action=list)` | `list_plugins` |
+| `variables(action=list)` | `list_variables` |
+
+N'en fournissent pas (toujours un payload complet) : la recherche ciblée (`state(action=find)` /
+`find_command`), les lectures/exécutions `bulk`, `state(action=changes)` / `get_changes`,
+`execute(...)`, et tout `scenario_write` (y compris sa relecture `action=full` /
+`scenarios(action=code)` / `get_scenario_code`).
 
 ## Scénarios : trigger_tags
 
@@ -74,5 +108,22 @@ guillemets droits `"`, jamais entre `#...#` ni entre backticks.
 Alternatives selon le besoin : `#trigger_id#` (comparaison numérique, insensible au renommage),
 `#trigger_value#` (payload du déclencheur), `#trigger#` (origine : schedule/cmd/...).
 
-Workflow recommandé : résoudre les notations de commandes → construire/choisir un trigger →
-créer le scénario → valider avant de le considérer terminé.
+## Scénarios : workflow sécurisé
+
+`scenario_write(action=validate)` n'est **pas** appelé automatiquement par `create`/`update` —
+l'omettre expose à découvrir une erreur de structure ou une référence de commande non
+résolvable seulement après écriture, ce qui coûte plus cher (essai/erreur, relecture de logs)
+que l'appel de validation lui-même.
+
+1. Résoudre les notations si besoin : `scenario_write(action=resolve)` (cmd_id numérique →
+   notation `#[Objet][Équipement][Commande]#`).
+2. Construire le déclencheur : `scenario_write(action=build_trigger)` plutôt que d'écrire la
+   syntaxe trigger_tags à la main (évite le piège de guillemets ci-dessus).
+3. **Valider avant d'écrire** : `scenario_write(action=validate)` sur les `elements`/`trigger`/
+   `mode` envisagés — vérifie la structure, les références de commandes, et les pièges de
+   syntaxe connus, sans rien sauvegarder. Corriger et revalider si des erreurs sont retournées.
+4. Créer ou modifier : `scenario_write(action=create)` / `action=update`.
+5. **Relire ce qui a réellement été enregistré** : `scenario_write(action=full)` (ou
+   `scenarios(action=code)` / `get_scenario_code`) — ne pas supposer que le contenu envoyé est
+   exactement celui qui a été stocké ; c'est cette relecture, pas l'appel de création, qui
+   confirme le résultat.
