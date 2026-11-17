@@ -14,6 +14,9 @@ agent qui lit `AGENTS.md`/les Claude Skills.
   `#trigger_value#`, `#trigger#`), le piège de guillemets qui casse une condition silencieusement,
   et pourquoi éviter l'ancienne syntaxe `#cmdId#` (pré-4.5) que la connaissance générale d'un
   modèle sur Jeedom suggère souvent.
+- **Modifier un scénario existant sans le recréer** — `patch` ligne par ligne (avec contrôle de
+  la valeur attendue) ou `update` en JSON natif (ids conservés), et `test_expression` pour
+  évaluer une condition avec les valeurs réelles avant de l'enregistrer.
 - **La distinction `merged`/`legacy`** — `mcp_jeedom` peut exposer soit des outils groupés par
   action (`state(action=find)`), soit un outil par action (`find_command`), selon la
   configuration du serveur ; le skill donne les deux noms pour rester correct dans les deux cas.

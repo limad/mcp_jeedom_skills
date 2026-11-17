@@ -5,9 +5,11 @@ description: >
   minimizing token usage on state/device queries (targeted lookups vs full dumps, ETag reuse,
   bulk operations, choosing summary vs compact format, avoiding full_map) and correctly
   authoring/editing Jeedom scenarios (trigger_tags syntax, common quoting pitfall, deprecated
-  old-style triggers). Trigger when: repeatedly polling device or room state, about to fetch
-  the full house state or full_map without needing the whole house, controlling several
-  devices in sequence, or creating/editing a Jeedom scenario with a trigger condition.
+  old-style triggers, editing an existing scenario in place, testing a condition). Trigger when:
+  repeatedly polling device or room state, about to fetch the full house state or full_map
+  without needing the whole house, controlling several devices in sequence, searching the
+  system messages, creating/editing a Jeedom scenario with a trigger condition, or about to
+  recreate an existing scenario to change a few lines.
 ---
 
 # Jeedom MCP — bonnes pratiques d'usage
@@ -40,8 +42,11 @@ active ; ne pas halluciner un outil qui n'y figure pas.
 | Exécuter une action | `execute(action=single)` | `execute_action` |
 | Exécuter plusieurs actions | `execute(action=bulk)` | `bulk_execute` |
 | Lister les équipements | `devices(action=list)` | `list_devices` |
+| Chercher un équipement par nom | `devices(action=search)` | `search_devices` |
+| Messages système | `messages(action=list)` | `get_system_messages` |
 
-`scenario_write` (création/édition de scénarios) garde le même nom dans les deux modes.
+`scenario_write` (création/édition de scénarios) et `test_expression` gardent le même nom dans
+les deux modes.
 
 ## Économie de tokens
 
@@ -64,6 +69,7 @@ la valeur absolue : ne pas les citer à l'utilisateur comme un chiffre fixe.
 | Cartographie exhaustive de tous les IDs | seulement si vraiment nécessaire — la resource dédiée est nettement plus lourde qu'une recherche ciblée | la lire "par précaution" en début de conversation |
 | Vérifier qu'une action a bien été appliquée | relire l'état après ~2s | ré-exécuter l'action "pour vérifier" (ne prouve rien, coûte un aller-retour de plus) |
 | Contexte maison (habitants, generic_types...) | lire les resources dédiées une fois en début de session | les relire à chaque tour |
+| Chercher dans les messages système | `search=` (mots) ou `plugin=` | la liste complète (textes coupés à 200 car.) |
 
 ## Portée de l'ETag
 
@@ -122,8 +128,12 @@ que l'appel de validation lui-même.
 3. **Valider avant d'écrire** : `scenario_write(action=validate)` sur les `elements`/`trigger`/
    `mode` envisagés — vérifie la structure, les références de commandes, et les pièges de
    syntaxe connus, sans rien sauvegarder. Corriger et revalider si des erreurs sont retournées.
-4. Créer ou modifier : `scenario_write(action=create)` / `action=update`.
-5. **Relire ce qui a réellement été enregistré** : `scenario_write(action=full)` (ou
+4. Tester une condition : `test_expression` l'évalue avec les valeurs réelles (rôle admin).
+5. Créer : `action=create`. Scénario **existant** : ne pas le recréer (ids perdus) ; lire
+   `action=full` (ids), puis `action=patch` + `changes=[{op: set|insert_after|remove,
+   expression_id, expected}]` pour quelques lignes, ou `action=update` + `scenario_json` (JSON
+   de `full` modifié ; sans `elements` = réglages seuls). Bloc code : superadmin seul.
+6. **Relire ce qui a réellement été enregistré** : `scenario_write(action=full)` (ou
    `scenarios(action=code)` / `get_scenario_code`) — ne pas supposer que le contenu envoyé est
    exactement celui qui a été stocké ; c'est cette relecture, pas l'appel de création, qui
    confirme le résultat.
