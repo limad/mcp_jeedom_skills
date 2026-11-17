@@ -16,8 +16,9 @@ The skill content is authored in the `mcp_jeedom` plugin itself
 (`resources/data/mcp_best_practices.md`), because it must stay accurate against that server's
 actual tool surface (`tools_mode=merged` vs `legacy` naming, resource URIs, format/etag
 options). The same file is served live by the daemon as the `jeedom://best_practices`
-resource, and consumed locally by the `ai_assistant` Jeedom plugin
-(`mcp_jeedom::getMcpBestPracticesGuide()`).
+resource. The `ai_assistant` Jeedom plugin only injects it (via
+`mcp_jeedom::getMcpBestPracticesGuide()`) on a legacy path; its MCP clients do not receive it,
+only the server instruction line that points to the resource (checked 2026-11-17).
 
 `skills/jeedom-mcp-best-practices/SKILL.md` in this repo is that same body with YAML
 frontmatter added on top. When the source file changes, copy the body here (the frontmatter
