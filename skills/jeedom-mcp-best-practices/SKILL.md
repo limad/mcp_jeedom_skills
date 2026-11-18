@@ -137,3 +137,49 @@ que l'appel de validation lui-même.
    `scenarios(action=code)` / `get_scenario_code`) — ne pas supposer que le contenu envoyé est
    exactement celui qui a été stocké ; c'est cette relecture, pas l'appel de création, qui
    confirme le résultat.
+
+## Équipements : créer et régler (device_build)
+
+Outil listé pour le superadmin quand la case « Écriture de fichiers » est cochée. Mise à jour
+partielle : seuls les champs passés changent. Lire d'abord l'équipement (`devices(action=info)`,
+ids des commandes) ; `device_control` reste l'outil pour activer, renommer, déplacer, supprimer.
+
+- **Créer** : `build_action=create`, `plugin` (`virtual`/`script`), `name`, `object_id`,
+  `commands[]` sans `id` (`name`, `type` info/action, `subType`, `unite`, `isHistorized`...).
+- **Modifier, ajouter** : `build_action=update`, `eq_id` ; dans `commands[]`, avec `id` =
+  commande modifiée, sans `id` = ajoutée. `configuration` de l'équipement : `autorefresh` (cron,
+  ex. `*/5 * * * *`).
+- **Supprimer des commandes** : `build_action=cmd_remove`, `eq_id`, `cmd_ids`, `confirm=true` ;
+  la réponse cite les scénarios qui les utilisent encore.
+- **Autres plugins** (Z-Wave, Frigate...) : seulement les réglages du core sur leurs commandes
+  existantes (`unite`, `isHistorized`, `minValue`/`maxValue`, `historizeRound`, `invertBinary`,
+  actions avant/après...). Ni création, ni type, ni configuration propre au plugin.
+
+Virtuel (`configuration` de la commande) :
+- info calculée : `calcul` = expression (`#[Pièce][Équipement][Commande]#`, `#123#`, opérateurs).
+- action qui pose une valeur : `infoName` = **nom** d'une info du même virtuel (créée si absente),
+  `value` = valeur ou expression posée (`slider`/`color`/`select` : la valeur reçue).
+- action qui pilote autre chose : `infoName` = `#id#` de la commande action cible.
+
+Script (`configuration` de la commande) : `requestType` (`script`, `http`, `json`, `xml`, `html`)
+et `request` (chemin du script ou URL). Sans `request`, un chemin est créé dans
+`plugins/script/data/` et la réponse dit quel fichier écrire avec `files(action=write)`.
+
+Actions avant/après exécution (tout plugin) : `jeedomPreExecCmd` / `jeedomPostExecCmd` =
+liste `[{"cmd": "#123#", "options": {"enable": "1"}}]` (options de l'action, ex. `message`).
+
+Relire avec `devices(action=info)` : la réponse de `device_build` dit ce qui a changé, pas
+l'état final complet.
+
+## Plugins : installer et configurer (superadmin)
+
+Mode legacy : `install_plugin`, `plugin_config`, `plugin_control` (mêmes paramètres, sans `action`).
+
+- **Installer** : trouver le logicalId avec `market(action=search)`, puis
+  `plugins(action=install, plugin_id, confirm=true)` (`version=beta` en option). Le plugin est
+  activé ; la réponse dit s'il a des dépendances (`control` + `deps_install`) ou un démon.
+  Déjà installé : `plugins(action=control, ctrl_action=update)`.
+- **Configurer** : `plugins(action=config, plugin_id)` lit les clés de la page de configuration
+  du plugin (secrets masqués `***`) ; `values={clé: valeur}` + `confirm=true` les écrit. Une
+  clé absente de la page est refusée, rien n'est écrit. Redémarrer ensuite le démon si le plugin
+  en a un (`ctrl_action=daemon_restart`). La configuration de mcp_jeedom ne s'écrit pas par MCP.
