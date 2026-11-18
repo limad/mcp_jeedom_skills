@@ -140,7 +140,8 @@ que l'appel de validation lui-même.
 
 ## Équipements : créer et régler (device_build)
 
-Outil listé pour le superadmin quand la case « Écriture de fichiers » est cochée. Mise à jour
+Outil listé quand la case « Écriture de fichiers » est cochée : pour le superadmin, et pour l'admin
+si « Construction d'équipements » l'est aussi. Mise à jour
 partielle : seuls les champs passés changent. Lire d'abord l'équipement (`devices(action=info)`,
 ids des commandes) ; `device_control` reste l'outil pour activer, renommer, déplacer, supprimer.
 
